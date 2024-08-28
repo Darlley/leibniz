@@ -1,0 +1,12 @@
+GET http://localhost:3000/api/videos
+
+###
+POST http://localhost:3000/api/videos
+Content-Type: application/json
+
+{
+  "userId": "cm0dwxfkv0000bfa6dcpk283p",
+  "url": "a",
+  "name": "a",
+  "duration": 60
+}

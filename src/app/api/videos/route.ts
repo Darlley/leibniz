@@ -1,5 +1,6 @@
-// src/app/api/create-site/route.ts
-import prisma from '@/utils/db';
+import { auth } from '@/auth';
+import prisma from '@/utils/prisma';
+import { redirect } from 'next/navigation';
 import { NextResponse } from 'next/server';
 
 interface VideoData {
@@ -10,7 +11,33 @@ interface VideoData {
 
 export async function GET() {
   try {
-    const videos = await prisma.video.findMany();
+    const session = await auth();
+
+    if (!session) {
+      return redirect('/signin');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: session?.user?.email!,
+      },
+    });
+    if (!user) {
+      return NextResponse.json(
+        {
+          type: 'UserNotFound',
+          message: 'User Not Found',
+          status: 404,
+        },
+        { status: 404 }
+      );
+    }
+
+    const videos = await prisma.video.findMany({
+      where: {
+        userId: user?.email!,
+      },
+    });
 
     // Retornar sucesso
     return NextResponse.json(videos, { status: 200 });
@@ -29,13 +56,36 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+
+    if (!session) {
+      return redirect('/signin');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: session?.user?.email!,
+      },
+    });
+    if (!user) {
+      return NextResponse.json(
+        {
+          type: 'UserNotFound',
+          message: 'User Not Found',
+          status: 404,
+        },
+        { status: 404 }
+      );
+    }
+
     const { url, name, duration }: VideoData = await request.json();
 
     const video = await prisma.video.create({
       data: {
         duration,
-        url,
         name,
+        url,
+        userId: user?.id,
       },
     });
 
